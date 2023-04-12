@@ -72,17 +72,23 @@ def phoneSpamCount(phone_no):
     up_votes, down_votes = result
     spam_risk = 0
     # Create a JSON response with the up_votes and down_votes data
-    response = {
-        "phone_no": phone_no,
-        "up_votes": up_votes,
-        "down_votes": down_votes,
-        "spam_risk": spam_risk
-    }
     try:
         spam_risk = (down_votes/(down_votes+up_votes))
+        response = {
+            "phone_no": phone_no,
+            "up_votes": up_votes,
+            "down_votes": down_votes,
+            "spam_risk": spam_risk
+        }
         return jsonify(response)
     except:
         spam_risk = 0
+        response = {
+            "phone_no": phone_no,
+            "up_votes": up_votes,
+            "down_votes": down_votes,
+            "spam_risk": spam_risk
+        }
         return jsonify(response)
 
 
