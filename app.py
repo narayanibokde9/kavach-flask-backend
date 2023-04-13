@@ -176,7 +176,7 @@ async def email():
 def sms():
     data = request.get_json()
     content = data['content']
-    result = predictEmail(content)
+    result = predictSMS(content)
     return jsonify(result)
 
 
