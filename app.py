@@ -1,10 +1,11 @@
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS, cross_origin
 from flask_mysqldb import MySQL
 import numpy as np
-from flask import Flask, request, jsonify, render_template
 import pickle
 
 app = Flask(__name__)
+CORS(app, support_credentials=True)
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
@@ -12,7 +13,6 @@ app.config['MYSQL_PASSWORD'] = 'root'
 app.config['MYSQL_DB'] = 'spam_alert_system'
 
 mysql = MySQL(app)
-
 
 filename = "smsmodel.pkl"
 with open(filename, 'rb') as f:
@@ -55,7 +55,7 @@ sms = {
 
 # 1. Get request -- get spam count from database
 
-
+# @cross_origin(support_credentials=True)
 @app.route('/phoneSpamCount/<int:phone_no>', methods=['POST', 'GET'])
 def phoneSpamCount(phone_no):
     cur = mysql.connection.cursor()
@@ -80,6 +80,7 @@ def phoneSpamCount(phone_no):
             "down_votes": down_votes,
             "spam_risk": spam_risk
         }
+        response.headers.add("Access-Control-Allow-Origin", "*")
         return jsonify(response)
     except:
         spam_risk = 0
@@ -89,12 +90,13 @@ def phoneSpamCount(phone_no):
             "down_votes": down_votes,
             "spam_risk": spam_risk
         }
+        response.headers.add("Access-Control-Allow-Origin", "*")
         return jsonify(response)
 
 
 # 2. Post request -- post vote to database
 
-
+# @cross_origin(support_credentials=True)
 @app.route('/phoneCallVote/<int:phone_no>/vote', methods=['POST', 'GET'])
 def phoneCallVote(phone_no):
     upvote = request.args.get('upvote')
@@ -131,12 +133,14 @@ def phoneCallVote(phone_no):
         "down_votes": down_votes,
         "spam_risk": spam_risk
     }
+    response.headers.add("Access-Control-Allow-Origin", "*")
 
     return jsonify(response)
 
 
-@app.route('/email', methods=['POST'])
-async def email():
+# @cross_origin(support_credentials=True)
+@app.route('/email', methods=['POST', 'GET'])
+def email():
     data = request.get_json()
     content = []
     content.insert(0, data['content'])
@@ -164,20 +168,27 @@ async def email():
     cur.execute(update_query, (no_of_reports,
                                total_invokations, email_id,))
     mysql.connection.commit()
-    result = {
+    response = {
         "isSpam": int(prediction[0]),
         "no_of_reports": no_of_reports,
     }
+    response = jsonify(response)
+    response.headers.add("Access-Control-Allow-Origin", "*")
     cur.close()
-    return jsonify(result)
+    return (response)
 
 
+# @cross_origin(support_credentials=True)
 @app.route('/sms',  methods=['GET', 'POST'])
 def sms():
     data = request.get_json()
     content = data['content']
-    result = predictSMS(content)
-    return jsonify(result)
+    prediction = predictSMS(content)
+    response = {
+        "isSpam": 1 if (prediction[0] > 0.5) else 0,
+    }
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return jsonify(response)
 
 
 if __name__ == '__main__':
